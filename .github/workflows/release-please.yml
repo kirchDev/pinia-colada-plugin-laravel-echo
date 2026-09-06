@@ -10,8 +10,14 @@ on:
       - main
       - dev
 
+# The group must NOT be `${{ github.workflow }}-${{ github.ref }}`: inside a
+# called workflow `github.workflow` resolves to *this* file's name, so the body
+# of `_release-please.yml` — which declares that exact group — would land in the
+# same group as the run calling it. GitHub detects the deadlock and cancels the
+# job, which then never appears in the run at all: two green jobs, a failed run,
+# and no release PR. Any group name the body cannot collide with is fine.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-publish-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
