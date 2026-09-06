@@ -16,9 +16,27 @@ Retyping a change is exactly how the two drift; one reflowed line or reworded cl
 
 ## What this repo is
 
-`scaffold` is a **GitHub template repository**, not an application. It ships the meta layer (lint, format, commit hooks, CI, CodeQL, Dependabot, release-please, issue/PR templates, standard meta docs) that every new kirchDev repo should start with. There is no application code — the project code can be anything (PHP, Go, Rust, Vue, shell). Only the meta layer lives here.
+`@kirchdev/pinia-colada-plugin-laravel-echo` is a **Pinia Colada plugin published to npm**. It ties a Colada query's cache to Laravel Echo: subscribe while the cache entry lives, leave when it is removed — and, the part that earns it its place, treat the websocket connection itself as part of the cache's validity.
 
-Implication: when changing files, ask "does this default make sense for _every_ future repo created from this template?" — not just for one project type.
+The repo started as a `TitusKirch/scaffold` clone, so the whole meta layer (lint, format, commit hooks, CI, CodeQL, Dependabot, release-please, issue/PR templates) is the scaffold's and the notes below still describe it. What is new is `src/`, `tsdown` and `vitest`.
+
+`vite-plugin-iconify-bundle` (sibling checkout at `../vite-plugin-iconify-bundle`) is the reference for every packaging convention here. **Read it rather than guessing** — the `package.json` shape, the tsdown config, the release workflow and the README structure were all lifted from it.
+
+## The plugin
+
+Two responsibilities, and the second is the reason it is a plugin rather than a composable:
+
+1. **Subscription lifecycle** — `queryCache.$onAction` pairs `extend` (entry created → subscribe) with `remove` (entry gone → leave). Channels are **reference-counted**: two entries may name the same channel, and leaving it when the first is removed would make the second go deaf.
+2. **Connection-aware cache validity** — a websocket drops silently and the cache then holds data that looks fresh and is not. `connector.onConnectionChange` drives one rule: while connected the query's `staleTime` is relaxed to `echo.staleTime`, on disconnect the query's own value is restored, and a *re*connect invalidates each entry exactly once.
+
+Four decisions that are settled, and that a later change should not quietly undo:
+
+- **The peer is `laravel-echo`, not `@laravel/echo-vue`.** Everything the plugin uses — `ConnectionStatus`, `connectionStatus()`, `connector.onConnectionChange()` — lives in `laravel-echo`; the Vue wrapper only re-exports it and adds composables a plugin cannot call (there is no component lifecycle here). Peering on the wrapper would exclude plain-Echo users and buy nothing.
+- **The Echo instance is a factory option**, an instance or a getter, never a global or an app lookup. Explicit, testable without module stubbing, and `() => null` is what makes SSR a no-op instead of a crash.
+- **`EchoEventContext` is not generic over the query's data type**, and its cache handles carry their own type parameter instead (`setQueryData<T>(…)`). Reaching `TData` from inside a handler puts it in a contravariant position of `UseQueryOptions`, and merely installing the plugin then stops a typed `UseQueryEntry` from fitting the plain one that `queryCache.invalidate()`, `cancel()`, `track()` and `remove()` all take. There is a test for exactly this under _type surface_ — a plugin must not make the library it extends stricter. The method-bivariance hack does **not** rescue it; that was measured, not assumed.
+- **`staleTime` relaxation is opt-in per query.** Reconnect invalidation is always on; touching staleness is not, so adding `echo` to an existing query cannot silently change its refetch behaviour.
+
+One non-obvious mechanic: `queryCache.ensure()` builds a **fresh options object on every call** and assigns it to the entry, so a relaxed `staleTime` written onto `entry.options` does not survive the next render. The plugin therefore also hooks `ensure` and re-applies, holding the patched object's identity so it never restores a value onto the wrong object.
 
 ## Commands
 
@@ -27,8 +45,12 @@ Implication: when changing files, ask "does this default make sense for _every_ 
 | `pnpm install`      | Install deps and wire husky hooks via the `prepare` script |
 | `pnpm lint`         | `oxlint . --deny-warnings`                                 |
 | `pnpm format`       | `oxfmt --check .` (note: `format` is the check, not fix)   |
-| `pnpm typecheck`    | `tsc --noEmit` over the meta scripts                       |
-| `pnpm check`        | Runs `lint` + `format` + `typecheck` + `check:policy` — the CI gate |
+| `pnpm build`        | `tsdown` → `dist/index.mjs` + `dist/index.d.mts`           |
+| `pnpm test`         | `vitest run` — Echo is mocked, no server needed            |
+| `pnpm test:watch`   | `vitest`                                                   |
+| `pnpm test:coverage`| `vitest run --coverage`                                    |
+| `pnpm typecheck`    | `tsc --noEmit` over `src/` and the meta scripts            |
+| `pnpm check`        | Runs `lint` + `format` + `typecheck` + `test` + `check:policy` — the CI gate |
 | `pnpm check:policy` | Proves the two agent policy files ban the same commands    |
 | `pnpm lint:fix`     | Auto-fix lint                                              |
 | `pnpm format:fix`   | Auto-fix format                                            |
@@ -37,16 +59,18 @@ Implication: when changing files, ask "does this default make sense for _every_ 
 | `pnpm taze`         | Interactive dependency upgrade check                       |
 | `pnpm taze:w`       | Write upgrade results                                      |
 
-There is no test suite — this is config-only. CI runs `pnpm lint`, `pnpm format`, `pnpm typecheck` and `pnpm check:policy` on PR.
+CI runs whatever the `check` script chains, so adding a check needs no workflow change.
 
 ## Architecture / conventions
 
 - **Node 24, pnpm 11.** Pinned via `.nvmrc`, `engines`, and `packageManager`. `pnpm-workspace.yaml` enforces `minimumReleaseAge=4320` (3-day cooldown), isolated node-linker. Don't loosen these without reason. Package-manager enforcement carries no key on purpose: pnpm 11 replaced `packageManagerStrict`/`packageManagerStrictVersion` with `pmOnFail`, whose default `download` already errors on a foreign package manager and fetches the pinned pnpm version — every other value only weakens it, so leave it unset (the rationale sits as a comment in the file).
 - **oxc, not eslint/prettier.** Linting via `oxlint`, formatting via `oxfmt`. Configs live in `.oxlintrc.json` / `.oxfmtrc.json`. `oxlint` uses `unicorn` + `oxc` plugins; rules deliberately minimal.
-- **TypeScript, no build step.** The meta scripts and the three tool configs are `.ts` — Node 24 strips types natively, so `scripts/check-policy-parity.ts`, `commitlint.config.ts`, `lint-staged.config.ts` and `taze.config.ts` stay directly executable and each tool loads its own `.ts` config unaided. `tsconfig.json` is `noEmit` + `strict` + `erasableSyntaxOnly`, so only strippable syntax (no enums, no parameter properties) can be written; `pnpm typecheck` is the gate. TypeScript is a devDependency of the template's meta layer only — a downstream PHP, Go or Rust repo inherits it for that and nothing else, and drops it by deleting `tsconfig.json`, the `typecheck` script and the four `.ts` files' types.
+- **TypeScript everywhere, one build.** `tsdown` emits ESM only (`dist/index.mjs`) plus types (`dist/index.d.mts`); `tsconfig.json` stays `noEmit` and is the typecheck gate, not the build. `erasableSyntaxOnly` is on, so only strippable syntax (no enums, no parameter properties) can be written — that is what keeps the meta scripts and the four tool configs (`scripts/check-policy-parity.ts`, `commitlint.config.ts`, `lint-staged.config.ts`, `taze.config.ts`) directly executable under Node 24's native type stripping.
+- **Nothing is bundled.** `tsdown.config.ts` lists `@pinia/colada`, `laravel-echo` and `vue` under `deps.neverBundle` — they are peers. A bundled second copy of Echo would hand the plugin a different instance than the app's, which is the one bug this package cannot afford. `vue` is the only runtime import the emitted module actually has.
+- **Tests sit beside the source** (`src/index.spec.ts`, not a `tests/` directory), and Echo is a hand-written double — the structural `EchoLike` interface exists so the suite never needs a running server.
 - **Husky hooks** (`.husky/pre-commit`, `.husky/commit-msg`) run `lint-staged` and `commitlint`. `lint-staged.config.ts` excludes `README.md`, `CLAUDE.md`, and `AGENTS.md` (free-form prose) and `pnpm-lock.yaml`. `oxlint --fix --deny-warnings` then `oxfmt` on JS/TS; `oxfmt` only on JSON/YAML/MD.
 - **Conventional Commits enforced** via `@commitlint/config-conventional`. Don't `--no-verify` unless explicitly asked.
-- **release-please is included** (unlike many templates that omit it). Files: `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml`. Config uses `release-type: simple` (language-agnostic), `include-v-in-tag: true`. Downstream repos start at `0.0.0` and reset via the steps in README → _Resetting release-please_.
+- **release-please is included** (unlike many templates that omit it). Files: `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml`. Config uses `release-type: node` (it bumps `package.json`), `include-v-in-tag: true`, `initial-version: 0.1.0`. The manifest starts at `0.0.0`, so the first conventional commit on `main` opens the initial release PR. `release-please.yml` also carries the two npm publish jobs — stable on a created release, prerelease otherwise — both via npm Trusted Publishing (OIDC), so **no `NPM_TOKEN` exists in this repo**.
 - **Workflows** use `actions/checkout@v6`, `actions/setup-node@v6`, `pnpm/action-setup@v6`, `github/codeql-action/{init,analyze}@v4`. Keep these pinned to major versions; Dependabot bumps them monthly.
 - **CodeQL** scans `actions` + `javascript-typescript` with `security-extended,security-and-quality` queries, gated by path filters so non-code changes don't trigger it.
 - **Dependabot** groups all minor/patch updates per ecosystem into a single PR (`npm-minor-patch`, `actions-minor-patch`). Majors come as separate PRs.
@@ -101,10 +125,10 @@ What follows for a new repo:
 
 ## Branching model
 
-The default here is a **`dev` integration branch**: branch off `dev`, PR into `dev`, roll `dev` up into `main`, and release-please releases from `main`. That is what most kirchDev repos run, so the template runs it too — a variant that ships switched off is a variant nobody notices is broken.
+This repo runs a **`dev` integration branch**: branch off `dev`, PR into `dev`, roll `dev` up into `main`, and release-please releases from `main`.
 
 > [!IMPORTANT]
-> A repo created from this template has the `dev` config but **no `dev` branch**. Create it before the first Dependabot run: with `target-branch: 'dev'` pointing at a branch that doesn't exist, Dependabot opens nothing at all. Going main-only (below) is a deliberate step too — leaving the config untouched is the one option that silently does nothing.
+> The `dev` **config** is in place (`dependabot.yml`, `.tituskirch-skills.json` → `pr.base`), but the branch itself does not exist yet. Create it before the first Dependabot run: with `target-branch: 'dev'` pointing at a branch that isn't there, Dependabot opens nothing at all.
 
 `.github/workflows/promotion-pr.yml` opens and updates the rolling draft promotion PR. Mark that PR ready and **merge it with a merge commit, never a squash**: squashing collapses the individual `feat:`/`fix:` commits into the PR's own `chore:` title, and release-please then cuts nothing.
 
@@ -118,26 +142,23 @@ rm .github/workflows/promotion-pr.yml
 # .tituskirch-skills.json   — set `pr.base` to "main"
 ```
 
-Nothing is vendored for this. A variant worth shipping as files is one that *adds* something — content that would otherwise be lost. A variant that only deletes has nothing to preserve, so it stays documented, exactly like _Public vs private repos_ below.
+`ci.yml` and `codeql.yml` list both `main` and `dev` in their `on: branches:` filters — without `dev` in `ci.yml`, PRs into `dev` (Dependabot's included) would run no CI at all.
 
-`ci.yml` and `codeql.yml` list both `main` and `dev` in their `on: branches:` filters and neither edit touches them. A filter naming a branch that doesn't exist is a no-op, so it costs a main-only repo nothing — and without `dev` in `ci.yml`, PRs into `dev` (Dependabot's included) would run no CI at all.
+## This is a public repo
 
-Variants that are *purely* deletions — see _Public vs private repos_ below — stay documented rather than vendored; only this one earns the folder.
+Which settles three things the scaffold leaves open, and none of them should be reopened by accident:
 
-## Public vs private repos
-
-Some meta defaults only make sense for one visibility. When spinning up a repo from this template, adjust for its visibility:
-
-- **CodeQL / code scanning** (`.github/workflows/codeql.yml`) depends on GitHub Advanced Security. It's free on **public** repos; on a **private** repo without a GHAS license it won't run — delete `codeql.yml` (and the CodeQL note above) rather than leave a dead workflow. The same goes for other GHAS-gated features (secret scanning, etc.). Dependabot version updates work on both.
-- **License.** A **public** repo ships MIT: keep `LICENSE` and the `[MIT](LICENSE) © …` README footer. A **private** repo is proprietary: remove/replace `LICENSE`, drop the MIT footer, and set `package.json` to `"license": "UNLICENSED"` (keep `"private": true`).
-- **Discord forum links.** `.github/ISSUE_TEMPLATE/config.yml` points questions, ideas and possible bugs at the repo's Discord forum (each open-source repo gets one, provisioned from the `infrastructure` repo's OpenTofu). Confirmed bugs and features stay as the GitHub issue forms. A **private** repo has no forum — drop the `contact_links` block; if you still want an in-repo Q&A path, restore a simple `question.yml`.
+- **CodeQL stays.** It depends on GitHub Advanced Security, which is free on public repos.
+- **MIT.** `LICENSE`, the README footer, and `"license": "MIT"` in `package.json`. Note the package is **not** `"private": true` — it publishes.
+- **The Discord forum links stay** in `.github/ISSUE_TEMPLATE/config.yml`: questions, ideas and possible bugs go there, confirmed bugs and features stay as GitHub issue forms.
 
 ## House style for READMEs and meta files
 
 `/write-readme` skill encodes the canonical structure. Key rules: hero block wrapped in `<div align="center">`, prescribed section emojis (✨ Features, 🚀 Setup, 🤝 Contributing, 🛣️ Versioning, 📄 License), license footer always reads `[MIT](LICENSE) © [Titus Kirch](https://github.com/TitusKirch/) / [IT-Dienstleistungen Titus Kirch](https://kirch.dev)`. Use GitHub callouts (`> [!TIP]`, `> [!IMPORTANT]`), never plain blockquotes.
 
-## When editing this template
+## When editing this repo
 
-- Every file referencing `TitusKirch/scaffold` is a placeholder that downstream users will replace. Keep the references consistent so a single `grep -rn "TitusKirch/scaffold"` catches them all.
-- `forgemap` (sibling repo at `../forgemap`) is the de-facto reference implementation of these conventions. When unsure about a config choice, check what forgemap does.
-- The template's own `package.json` is `"private": true` and `"name": "scaffold"` — not published anywhere.
+- **`SETUP.md` is the working brief** that this package was built from, and it is temporary: delete it once the package is released and the README carries the same information. Where it and the code disagree, the code won — Part 4's open questions are all decided, and _The plugin_ above records how.
+- **`vite-plugin-iconify-bundle` (`../vite-plugin-iconify-bundle`) is the packaging reference**, `forgemap` (`../forgemap`) the reference for the meta layer. When unsure about a config choice, open one of them rather than inventing.
+- **Anything public is a release decision.** The exported types are the API: `UseQueryEchoOptions`, `EchoEventContext`, `EchoLike`, `EchoChannelVisibility`. Widening them is a `feat`, narrowing them a `feat!`.
+- **Step 5 of `SETUP.md` is still open**: after the first publish, open a PR against the [Pinia Colada community plugins page](https://pinia-colada.esm.dev/plugins/community.html).
