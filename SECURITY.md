@@ -2,28 +2,29 @@
 
 ## Scope
 
-`scaffold` is a **template repository** — it contains configuration files, GitHub workflows, and meta documents that are copied into new repositories. It is not a runtime package and has no users in the traditional sense.
+`@kirchdev/pinia-colada-plugin-laravel-echo` is a Pinia Colada plugin published to npm. It runs in the browser, inside the consuming application, and holds no credentials of its own — it subscribes to the channels the application names, on the Echo instance the application hands it.
 
-The supported "version" is always the **tip of `main`**. There are no historical branches to back-port fixes to; downstream repositories should re-pull the relevant file(s) from `main` if a vulnerability is discovered in the shipped templates.
+The supported version is always the **latest release**. Fixes ship forward; there are no maintenance branches to back-port to.
 
 ## Reporting a Vulnerability
 
 **Please do not file a public GitHub issue for security problems.**
 
-In the context of this template, a "vulnerability" typically means:
+In the context of this package, a "vulnerability" typically means:
 
+- A query subscribing to a channel other than the one it declared, or one it should not be able to reach.
+- A cache entry keeping a subscription alive after it was removed, so events reach a listener the application believes to be gone.
 - An insecure default in a shipped workflow (e.g. overly broad `permissions`).
-- A misconfigured Action that could leak secrets.
 - A dependency in `package.json` that introduces a known CVE.
 
 Use one of the following private channels:
 
-1. **GitHub Private Vulnerability Reporting** (preferred): open a private advisory at <https://github.com/TitusKirch/scaffold/security/advisories/new>.
+1. **GitHub Private Vulnerability Reporting** (preferred): open a private advisory at <https://github.com/kirchDev/pinia-colada-plugin-laravel-echo/security/advisories/new>.
 2. **Email**: [titus.kirch@kirch.dev](mailto:titus.kirch@kirch.dev). PGP available on request.
 
 Please include:
 
-- A description of the vulnerability and its impact on downstream repositories.
+- A description of the vulnerability and its impact on consuming applications.
 - Steps to reproduce.
 - Any suggested fix, if you have one.
 
