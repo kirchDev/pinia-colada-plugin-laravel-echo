@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.schemastore.org/package.json",
   "name": "@kirchdev/pinia-colada-plugin-laravel-echo",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Pinia Colada plugin that keeps a query's cache current from Laravel Echo events — and invalidates it when the websocket drops and comes back.",
   "keywords": [
     "echo",
