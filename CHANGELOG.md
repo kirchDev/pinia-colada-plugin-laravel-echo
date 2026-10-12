@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/kirchDev/pinia-colada-plugin-laravel-echo/compare/v0.1.0...v0.1.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* correct the codex policy match examples ([072fb7f](https://github.com/kirchDev/pinia-colada-plugin-laravel-echo/commit/072fb7fe8c712a98b47d03655f67950711dd0748))
+* publish prereleases only from main ([1e19efb](https://github.com/kirchDev/pinia-colada-plugin-laravel-echo/commit/1e19efb4c478b0cfc22aed5ccc4b4e34051eacc4))
+
 ## 0.1.0 (2026-09-06)
 
 
