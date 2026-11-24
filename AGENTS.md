@@ -1,18 +1,6 @@
-# CLAUDE.md
+# Agent instructions
 
 This file provides guidance to AI coding agents — Claude Code (claude.ai/code) and vendor-neutral tools such as Codex, OpenCode, Cursor, and Copilot — when working with code in this repository.
-
-## Agent instruction files
-
-`CLAUDE.md` and `AGENTS.md` are kept **byte-identical**. `CLAUDE.md` is what Claude Code reads; `AGENTS.md` is what vendor-neutral agent tools read — Codex, OpenCode, Cursor, Copilot, and whatever follows them. Two real files, deliberately not a symlink: not every tool resolves one.
-
-**After editing either file, copy it over the other — don't repeat the edit by hand:**
-
-```bash
-cp CLAUDE.md AGENTS.md   # or the reverse, whichever you just edited
-```
-
-Retyping a change is exactly how the two drift; one reflowed line or reworded clause is enough. `diff CLAUDE.md AGENTS.md` must print nothing. If it ever does, treat it as a defect and fix it by letting one file win wholesale — never by merging them.
 
 ## What this repo is
 
@@ -68,7 +56,7 @@ CI runs whatever the `check` script chains, so adding a check needs no workflow 
 - **TypeScript everywhere, one build.** `tsdown` emits ESM only (`dist/index.mjs`) plus types (`dist/index.d.mts`); `tsconfig.json` stays `noEmit` and is the typecheck gate, not the build. `erasableSyntaxOnly` is on, so only strippable syntax (no enums, no parameter properties) can be written — that is what keeps the meta scripts and the four tool configs (`scripts/check-policy-parity.ts`, `commitlint.config.ts`, `lint-staged.config.ts`, `taze.config.ts`) directly executable under Node 24's native type stripping.
 - **Nothing is bundled.** `tsdown.config.ts` lists `@pinia/colada`, `laravel-echo` and `vue` under `deps.neverBundle` — they are peers. A bundled second copy of Echo would hand the plugin a different instance than the app's, which is the one bug this package cannot afford. `vue` is the only runtime import the emitted module actually has.
 - **Tests sit beside the source** (`src/index.spec.ts`, not a `tests/` directory), and Echo is a hand-written double — the structural `EchoLike` interface exists so the suite never needs a running server.
-- **Husky hooks** (`.husky/pre-commit`, `.husky/commit-msg`) run `lint-staged` and `commitlint`. `lint-staged.config.ts` excludes `README.md`, `CLAUDE.md`, and `AGENTS.md` (free-form prose) and `pnpm-lock.yaml`. `oxlint --fix --deny-warnings` then `oxfmt` on JS/TS; `oxfmt` only on JSON/YAML/MD.
+- **Husky hooks** (`.husky/pre-commit`, `.husky/commit-msg`) run `lint-staged` and `commitlint`. `lint-staged.config.ts` excludes `README.md` and `AGENTS.md` (free-form prose) and `pnpm-lock.yaml`. `oxlint --fix --deny-warnings` then `oxfmt` on JS/TS; `oxfmt` only on JSON/YAML/MD.
 - **Conventional Commits enforced** via `@commitlint/config-conventional`. Don't `--no-verify` unless explicitly asked.
 - **release-please is included** (unlike many templates that omit it). Files: `release-please-config.json`, `.release-please-manifest.json`, `.github/workflows/release-please.yml`. Config uses `release-type: node` (it bumps `package.json`), `include-v-in-tag: true`, `initial-version: 0.1.0`. The manifest starts at `0.0.0`, so the first conventional commit on `main` opens the initial release PR. `release-please.yml` also carries the two npm publish jobs — stable on a created release, prerelease otherwise — both via npm Trusted Publishing (OIDC), so **no `NPM_TOKEN` exists in this repo**.
 - **Workflows** use `actions/checkout@v6`, `actions/setup-node@v6`, `pnpm/action-setup@v6`, `github/codeql-action/{init,analyze}@v4`. Keep these pinned to major versions; Dependabot bumps them monthly.

@@ -3,7 +3,7 @@ import type { Configuration } from 'lint-staged';
 const config: Configuration = {
   '*.md': (filenames) => {
     const files = filenames.filter(
-      (f) => !/(?:^|\/)(README|CLAUDE|AGENTS)\.md$/.test(f)
+      (f) => !/(?:^|\/)(README|AGENTS)\.md$/.test(f)
     );
     return files.length > 0 ? `pnpm exec oxfmt ${files.join(' ')}` : [];
   },

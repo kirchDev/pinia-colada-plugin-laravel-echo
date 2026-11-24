@@ -1,5 +1,5 @@
 # Dependabot opens its PRs against the `dev` integration branch, not the default
-# branch. A main-only repo drops both `target-branch` lines — see CLAUDE.md.
+# branch. A main-only repo drops both `target-branch` lines — see AGENTS.md.
 version: 2
 updates:
   - package-ecosystem: 'npm'
