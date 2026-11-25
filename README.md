@@ -44,8 +44,6 @@ Echo exposes `ConnectionStatus`. This plugin turns it into one rule for every qu
 | disconnected | the query's own `staleTime` is restored: normal refetch behaviour again |
 | reconnected  | the entry is invalidated once, to pick up whatever was missed           |
 
-Written per call site, that is either repeated or forgotten. Written once, it is a property of every query that opts in.
-
 ## 📦 Install & run
 
 ```bash
@@ -124,17 +122,7 @@ The cache handles carry their own type parameter — `setQueryData<Notification[
 
 ## 🤝 Contributing
 
-PRs welcome. Conventional Commits required (enforced via commitlint). Husky runs the project's linters/formatters on `git commit`.
-
-```bash
-pnpm test    # the suite — Echo is mocked, no server needed
-pnpm check   # lint, format, typecheck, test, policy parity — the CI gate
-```
-
-> [!TIP]
-> Run `pnpm check:fix` before pushing — CI will catch what husky missed.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
+PRs welcome. Conventional Commits required (enforced via commitlint), and `pnpm check` is the CI gate — the full workflow is in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 🛣️ Versioning
 
