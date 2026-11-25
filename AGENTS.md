@@ -55,7 +55,3 @@ Every file in `.github/workflows/` is a stub calling a body in [`kirchDev/workfl
 ## Skills
 
 `.tituskirch-skills.json` configures the [TitusKirch skills](https://github.com/TitusKirch/skills); reconcile it with `/tituskirch-skills-config`. Install the skills with `pnpm dlx skills add TitusKirch/skills`; `pnpm skills:update` refreshes project-scoped ones.
-
-## Open
-
-- Open a PR adding the plugin to the [Pinia Colada community plugins page](https://pinia-colada.esm.dev/plugins/community.html) — the package is published.
