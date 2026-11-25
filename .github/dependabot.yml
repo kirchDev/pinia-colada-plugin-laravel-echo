@@ -1,5 +1,5 @@
 # Dependabot opens its PRs against the `dev` integration branch, not the default
-# branch. A main-only repo drops both `target-branch` lines — see CLAUDE.md.
+# branch. A main-only repo drops both `target-branch` lines — see AGENTS.md.
 version: 2
 updates:
   - package-ecosystem: 'npm'
@@ -35,6 +35,10 @@ updates:
       interval: 'monthly'
     cooldown:
       default-days: 3
+      # The reusable bodies are this org's own releases, so waiting out the
+      # cooldown on them protects against nothing and only delays fixes.
+      exclude:
+        - 'kirchDev/workflows*'
     labels:
       - 'dependencies'
       - 'stack: github-actions'

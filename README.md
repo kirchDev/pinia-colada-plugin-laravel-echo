@@ -1,12 +1,12 @@
 <div align="center">
 
-# 📡 @kirchdev/pinia-colada-plugin-laravel-echo
+# 🧩 @kirchdev/pinia-colada-plugin-laravel-echo
 
 **Pinia Colada queries fed by Laravel Echo — and invalidated when the websocket drops and comes back**
 
 [![npm Version](https://img.shields.io/npm/v/@kirchdev/pinia-colada-plugin-laravel-echo.svg?style=flat-square&color=4f46e5)](https://www.npmjs.com/package/@kirchdev/pinia-colada-plugin-laravel-echo)
 [![Downloads](https://img.shields.io/npm/dm/@kirchdev/pinia-colada-plugin-laravel-echo.svg?style=flat-square&color=4f46e5)](https://www.npmjs.com/package/@kirchdev/pinia-colada-plugin-laravel-echo)
-[![Tests](https://img.shields.io/github/actions/workflow/status/kirchDev/pinia-colada-plugin-laravel-echo/ci.yml?branch=main&style=flat-square&label=tests)](https://github.com/kirchDev/pinia-colada-plugin-laravel-echo/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/kirchDev/pinia-colada-plugin-laravel-echo/ci.yml?branch=dev&style=flat-square&label=tests)](https://github.com/kirchDev/pinia-colada-plugin-laravel-echo/actions/workflows/ci.yml)
 [![Node Version](https://img.shields.io/node/v/@kirchdev/pinia-colada-plugin-laravel-echo.svg?style=flat-square&color=8993be)](https://www.npmjs.com/package/@kirchdev/pinia-colada-plugin-laravel-echo)
 [![License: MIT](https://img.shields.io/npm/l/@kirchdev/pinia-colada-plugin-laravel-echo.svg?style=flat-square&color=10b981)](LICENSE)
 
@@ -43,8 +43,6 @@ Echo exposes `ConnectionStatus`. This plugin turns it into one rule for every qu
 | connected    | events keep the cache current — `echo.staleTime` relaxes refetching     |
 | disconnected | the query's own `staleTime` is restored: normal refetch behaviour again |
 | reconnected  | the entry is invalidated once, to pick up whatever was missed           |
-
-Written per call site, that is either repeated or forgotten. Written once, it is a property of every query that opts in.
 
 ## 📦 Install & run
 
@@ -124,17 +122,7 @@ The cache handles carry their own type parameter — `setQueryData<Notification[
 
 ## 🤝 Contributing
 
-PRs welcome. Conventional Commits required (enforced via commitlint). Husky runs the project's linters/formatters on `git commit`.
-
-```bash
-pnpm test    # the suite — Echo is mocked, no server needed
-pnpm check   # lint, format, typecheck, test, policy parity — the CI gate
-```
-
-> [!TIP]
-> Run `pnpm check:fix` before pushing — CI will catch what husky missed.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
+PRs welcome. Conventional Commits required (enforced via commitlint), and `pnpm check` is the CI gate — the full workflow is in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 🛣️ Versioning
 
