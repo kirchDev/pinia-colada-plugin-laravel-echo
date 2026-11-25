@@ -1,12 +1,12 @@
 <div align="center">
 
-# 📡 @kirchdev/pinia-colada-plugin-laravel-echo
+# 🧩 @kirchdev/pinia-colada-plugin-laravel-echo
 
 **Pinia Colada queries fed by Laravel Echo — and invalidated when the websocket drops and comes back**
 
 [![npm Version](https://img.shields.io/npm/v/@kirchdev/pinia-colada-plugin-laravel-echo.svg?style=flat-square&color=4f46e5)](https://www.npmjs.com/package/@kirchdev/pinia-colada-plugin-laravel-echo)
 [![Downloads](https://img.shields.io/npm/dm/@kirchdev/pinia-colada-plugin-laravel-echo.svg?style=flat-square&color=4f46e5)](https://www.npmjs.com/package/@kirchdev/pinia-colada-plugin-laravel-echo)
-[![Tests](https://img.shields.io/github/actions/workflow/status/kirchDev/pinia-colada-plugin-laravel-echo/ci.yml?branch=main&style=flat-square&label=tests)](https://github.com/kirchDev/pinia-colada-plugin-laravel-echo/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/kirchDev/pinia-colada-plugin-laravel-echo/ci.yml?branch=dev&style=flat-square&label=tests)](https://github.com/kirchDev/pinia-colada-plugin-laravel-echo/actions/workflows/ci.yml)
 [![Node Version](https://img.shields.io/node/v/@kirchdev/pinia-colada-plugin-laravel-echo.svg?style=flat-square&color=8993be)](https://www.npmjs.com/package/@kirchdev/pinia-colada-plugin-laravel-echo)
 [![License: MIT](https://img.shields.io/npm/l/@kirchdev/pinia-colada-plugin-laravel-echo.svg?style=flat-square&color=10b981)](LICENSE)
 
