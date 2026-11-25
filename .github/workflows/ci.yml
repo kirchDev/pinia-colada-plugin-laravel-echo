@@ -10,6 +10,10 @@ on:
       - main
       - dev
     types: [opened, synchronize, reopened, ready_for_review]
+  # Work is also committed straight onto `dev`, so a push there is checked too.
+  push:
+    branches:
+      - dev
 
 # NO `paths-ignore`, AND THAT IS THE POINT OF THE GATE. A change touching only
 # prose cannot break a lint — but a workflow that does not TRIGGER reports no
