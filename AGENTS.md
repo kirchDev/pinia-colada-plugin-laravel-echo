@@ -58,5 +58,4 @@ Every file in `.github/workflows/` is a stub calling a body in [`kirchDev/workfl
 
 ## Open
 
-- **`SETUP.md`** is the temporary brief the package was built from; where it and the code disagree, the code wins. Delete it once the README carries its content.
-- After the first publish, open a PR adding the plugin to the [Pinia Colada community plugins page](https://pinia-colada.esm.dev/plugins/community.html).
+- Open a PR adding the plugin to the [Pinia Colada community plugins page](https://pinia-colada.esm.dev/plugins/community.html) — the package is published.
